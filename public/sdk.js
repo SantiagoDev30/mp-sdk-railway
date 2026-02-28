@@ -1,7 +1,10 @@
 window.MP_SDK = {
   openPayment: async function (config) {
 
-    const configResponse = await fetch("/api/config");
+    const baseUrl = document.currentScript.src.replace("/sdk.js", "");
+
+    const configResponse = await fetch(baseUrl + "/api/config");
+
     const { public_key } = await configResponse.json();
 
     const overlay = document.createElement("div");
@@ -63,7 +66,7 @@ window.MP_SDK = {
           onReady: () => {},
           onSubmit: async (formData) => {
 
-            const response = await fetch("/api/process-payment", {
+            const response = await fetch(baseUrl + "/api/process-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
