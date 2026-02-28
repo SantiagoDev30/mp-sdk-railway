@@ -5,6 +5,10 @@ const path = require("path");
 
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 
+if (!process.env.MP_ACCESS_TOKEN) {
+  console.error("MP_ACCESS_TOKEN no está definido");
+}
+
 const app = express();
 
 app.use(cors());
