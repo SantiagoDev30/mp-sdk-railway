@@ -19,10 +19,15 @@
 
     openPayment: async function (config) {
 
+      if (!config.amount) {
+        console.error("Debe enviar el campo amount");
+        return;
+      }
+
       loadBootstrap(async function () {
 
-        const configResponse = await fetch(baseUrl + "/api/config");
-        const { public_key } = await configResponse.json();
+        const response = await fetch(baseUrl + "/api/config");
+        const { public_key } = await response.json();
 
         let currentStep = 1;
         let buyerData = {};
@@ -34,8 +39,8 @@
         overlay.style.zIndex = "9999";
 
         overlay.innerHTML = `
-          <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content shadow-lg rounded-4">
+          <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow-lg">
               <div class="modal-body p-4" id="mp-modal-body"></div>
             </div>
           </div>
@@ -47,23 +52,42 @@
 
         function renderStep() {
 
-          /* ================= STEP 1 ================= */
+          /* ================== STEP 1 ================== */
 
           if (currentStep === 1) {
 
+            const summary = config.summary || [];
+            const currency = config.currency || "S/";
+
+            let summaryHTML = "";
+
+            summary.forEach(item => {
+              summaryHTML += `
+                <div class="d-flex justify-content-between mb-3">
+                  <span>${item.label}</span>
+                  <strong>${item.value}</strong>
+                </div>
+              `;
+            });
+
             modalBody.innerHTML = `
-              <h4 class="mb-4">Resumen del pedido</h4>
-              <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                  <h5>${config.title}</h5>
-                  <p class="mb-1">Subtotal: S/ ${config.price}</p>
-                  <p class="fw-bold fs-5">Total: S/ ${config.price}</p>
+              <h4 class="fw-bold mb-4">Resumen de Compra</h4>
+
+              <div class="card border-0 shadow-sm rounded-4 p-4">
+                ${summaryHTML}
+                <hr>
+                <div class="d-flex justify-content-between fs-5 mt-3">
+                  <span class="fw-bold">Total a pagar:</span>
+                  <span class="fw-bold text-primary">
+                    ${currency} ${config.amount}
+                  </span>
                 </div>
               </div>
 
-              <div class="d-flex justify-content-end gap-2">
-                <button class="btn btn-outline-secondary" id="close-modal">Cancelar</button>
-                <button class="btn btn-primary" id="next-step">Continuar</button>
+              <div class="text-end mt-4">
+                <button class="btn btn-primary btn-lg px-5" id="next-step">
+                  Continuar al Pago →
+                </button>
               </div>
             `;
 
@@ -71,32 +95,80 @@
               currentStep = 2;
               renderStep();
             };
-
-            document.getElementById("close-modal").onclick = () => {
-              document.body.removeChild(overlay);
-            };
           }
 
-          /* ================= STEP 2 ================= */
+          /* ================== STEP 2 ================== */
 
           else if (currentStep === 2) {
 
+            const summary = config.summary || [];
+            const currency = config.currency || "S/";
+
+            let summaryHTML = "";
+
+            summary.forEach(item => {
+              summaryHTML += `
+                <div class="d-flex justify-content-between mb-2">
+                  <span>${item.label}</span>
+                  <span>${item.value}</span>
+                </div>
+              `;
+            });
+
             modalBody.innerHTML = `
-              <h4 class="mb-4">Datos del comprador</h4>
+              <div class="container-fluid">
+                <div class="row g-4">
 
-              <div class="mb-3">
-                <label class="form-label">Nombre completo</label>
-                <input type="text" class="form-control" id="buyer-name">
-              </div>
+                  <!-- FORMULARIO -->
+                  <div class="col-md-8">
+                    <div class="card border-0 shadow-sm rounded-4 p-4">
 
-              <div class="mb-3">
-                <label class="form-label">Correo electrónico</label>
-                <input type="email" class="form-control" id="buyer-email">
-              </div>
+                      <h5 class="fw-bold mb-4">Datos de Pago</h5>
 
-              <div class="d-flex justify-content-between">
-                <button class="btn btn-outline-secondary" id="back-step">Atrás</button>
-                <button class="btn btn-primary" id="next-step">Continuar</button>
+                      <div class="mb-3">
+                        <label class="form-label">Nombre Completo *</label>
+                        <input type="text" class="form-control" id="buyer-name">
+                      </div>
+
+                      <div class="mb-3">
+                        <label class="form-label">Correo Electrónico *</label>
+                        <input type="email" class="form-control" id="buyer-email">
+                      </div>
+
+                      <hr class="my-4">
+
+                      <div id="payment-container"></div>
+
+                      <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-outline-secondary" id="back-step">
+                          ← Volver
+                        </button>
+                        <button class="btn btn-primary px-5" id="pay-button">
+                          Pagar Ahora
+                        </button>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <!-- RESUMEN -->
+                  <div class="col-md-4">
+                    <div class="card border-0 shadow-sm rounded-4 p-4">
+
+                      <h6 class="fw-bold mb-3">Resumen</h6>
+                      ${summaryHTML}
+                      <hr>
+                      <div class="d-flex justify-content-between fs-5">
+                        <strong>Total</strong>
+                        <strong class="text-primary">
+                          ${currency} ${config.amount}
+                        </strong>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
               </div>
             `;
 
@@ -105,52 +177,20 @@
               renderStep();
             };
 
-            document.getElementById("next-step").onclick = () => {
-
-              buyerData = {
-                name: document.getElementById("buyer-name").value,
-                email: document.getElementById("buyer-email").value
-              };
-
-              if (!buyerData.name || !buyerData.email) {
-                alert("Complete todos los campos");
-                return;
-              }
-
-              currentStep = 3;
-              renderStep();
-            };
+            renderBrick();
           }
 
-          /* ================= STEP 3 ================= */
+          /* ================== STEP 3 ================== */
 
           else if (currentStep === 3) {
 
             modalBody.innerHTML = `
-              <h4 class="mb-4">Método de pago</h4>
-              <div id="payment-container"></div>
-              <div class="mt-3">
-                <button class="btn btn-outline-secondary" id="back-step">Atrás</button>
-              </div>
-            `;
-
-            document.getElementById("back-step").onclick = () => {
-              currentStep = 2;
-              renderStep();
-            };
-
-            renderBrick();
-          }
-
-          /* ================= STEP 4 ================= */
-
-          else if (currentStep === 4) {
-
-            modalBody.innerHTML = `
-              <div class="text-center py-4">
-                <h3 class="text-success mb-3">Pago aprobado</h3>
-                <p>Gracias por su compra.</p>
-                <button class="btn btn-primary mt-3" id="close-modal">Cerrar</button>
+              <div class="text-center py-5">
+                <h3 class="text-success fw-bold mb-3">Pago Aprobado</h3>
+                <p>Tu pago fue procesado correctamente.</p>
+                <button class="btn btn-primary mt-4 px-5" id="close-modal">
+                  Finalizar
+                </button>
               </div>
             `;
 
@@ -178,24 +218,45 @@
 
             bricksBuilder.create("payment", "payment-container", {
               initialization: {
-                amount: Number(config.price)
+                amount: Number(config.amount),
+                /*preferenceId: "<PREFERENCE_ID>",
+                payer: {
+                  firstName: "",
+                  lastName: "",
+                  email: "",
+                },*/
               },
-              paymentMethods: {
-                creditCard: "all",
-                debitCard: "all"
+              customization: {
+                visual: {
+                  style: {
+                    theme: "default",
+                  },
+                },
+                paymentMethods: {
+                  creditCard: "all",
+                  debitCard: "all",
+                  ticket: "all",
+                  bankTransfer: "all",
+                  onboarding_credits: "all",
+                  wallet_purchase: "all",
+                  maxInstallments: 1
+                },
               },
               callbacks: {
 
-                onReady: () => {},
-
                 onSubmit: async (formData) => {
+
+                  buyerData = {
+                    name: document.getElementById("buyer-name").value,
+                    email: document.getElementById("buyer-email").value
+                  };
 
                   const response = await fetch(baseUrl + "/api/process-payment", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                       ...formData,
-                      transaction_amount: Number(config.price),
+                      transaction_amount: Number(config.amount),
                       payer: {
                         email: buyerData.email
                       }
@@ -205,7 +266,7 @@
                   const result = await response.json();
 
                   if (result.status === "approved") {
-                    currentStep = 4;
+                    currentStep = 3;
                     renderStep();
                   } else {
                     alert("Pago rechazado o pendiente");
