@@ -244,6 +244,10 @@
               },
               callbacks: {
 
+                onReady: () => {
+                  console.log("Brick listo");
+                },
+
                 onSubmit: async (formData) => {
 
                   buyerData = {
