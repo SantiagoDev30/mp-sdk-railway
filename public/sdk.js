@@ -29,8 +29,23 @@
         const response = await fetch(baseUrl + "/api/config");
         const { public_key } = await response.json();
 
+        const primaryColor = config.primaryColor || "#0d6efd";
+
+        const style = document.createElement("style");
+        style.innerHTML = `
+          .mp-primary { color: ${primaryColor}; }
+          .mp-btn-primary {
+            background-color: ${primaryColor};
+            border-color: ${primaryColor};
+            color: #fff;
+          }
+          .mp-btn-primary:hover {
+            opacity: 0.9;
+          }
+        `;
+        document.head.appendChild(style);
+
         let currentStep = 1;
-        let buyerData = {};
 
         const overlay = document.createElement("div");
         overlay.className = "modal fade show";
@@ -39,8 +54,8 @@
         overlay.style.zIndex = "9999";
 
         overlay.innerHTML = `
-          <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content rounded-4 shadow-lg">
+          <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow">
               <div class="modal-body p-4" id="mp-modal-body"></div>
             </div>
           </div>
@@ -52,9 +67,12 @@
 
         function renderStep() {
 
-          /* ================== STEP 1 ================== */
+          /* ================= STEP 1 ================= */
 
           if (currentStep === 1) {
+
+            overlay.querySelector(".modal-dialog").className =
+              "modal-dialog modal-md modal-dialog-centered";
 
             const summary = config.summary || [];
             const currency = config.currency || "S/";
@@ -71,22 +89,22 @@
             });
 
             modalBody.innerHTML = `
-              <h4 class="fw-bold mb-4">Resumen de Compra</h4>
+              <h5 class="fw-bold mb-4">Resumen de Compra</h5>
 
               <div class="card border-0 shadow-sm rounded-4 p-4">
                 ${summaryHTML}
                 <hr>
                 <div class="d-flex justify-content-between fs-5 mt-3">
-                  <span class="fw-bold">Total a pagar:</span>
-                  <span class="fw-bold text-primary">
+                  <strong>Total a pagar:</strong>
+                  <strong class="mp-primary">
                     ${currency} ${config.amount}
-                  </span>
+                  </strong>
                 </div>
               </div>
 
               <div class="text-end mt-4">
-                <button class="btn btn-primary btn-lg px-5" id="next-step">
-                  Continuar al Pago →
+                <button class="btn mp-btn-primary px-5" id="next-step">
+                  Continuar →
                 </button>
               </div>
             `;
@@ -97,9 +115,12 @@
             };
           }
 
-          /* ================== STEP 2 ================== */
+          /* ================= STEP 2 ================= */
 
           else if (currentStep === 2) {
+
+            overlay.querySelector(".modal-dialog").className =
+              "modal-dialog modal-lg modal-dialog-centered";
 
             const summary = config.summary || [];
             const currency = config.currency || "S/";
@@ -119,32 +140,17 @@
               <div class="container-fluid">
                 <div class="row g-4">
 
-                  <!-- FORMULARIO -->
+                  <!-- MEDIOS DE PAGO -->
                   <div class="col-md-8">
                     <div class="card border-0 shadow-sm rounded-4 p-4">
 
-                      <h5 class="fw-bold mb-4">Datos de Pago</h5>
-
-                      <div class="mb-3">
-                        <label class="form-label">Nombre Completo *</label>
-                        <input type="text" class="form-control" id="buyer-name">
-                      </div>
-
-                      <div class="mb-3">
-                        <label class="form-label">Correo Electrónico *</label>
-                        <input type="email" class="form-control" id="buyer-email">
-                      </div>
-
-                      <hr class="my-4">
+                      <h6 class="fw-bold mb-4">Medios de pago</h6>
 
                       <div id="payment-container"></div>
 
-                      <div class="d-flex justify-content-between mt-4">
+                      <div class="mt-4">
                         <button class="btn btn-outline-secondary" id="back-step">
                           ← Volver
-                        </button>
-                        <button class="btn btn-primary px-5" id="pay-button">
-                          Pagar Ahora
                         </button>
                       </div>
 
@@ -156,11 +162,14 @@
                     <div class="card border-0 shadow-sm rounded-4 p-4">
 
                       <h6 class="fw-bold mb-3">Resumen</h6>
+
                       ${summaryHTML}
+
                       <hr>
+
                       <div class="d-flex justify-content-between fs-5">
                         <strong>Total</strong>
-                        <strong class="text-primary">
+                        <strong class="mp-primary">
                           ${currency} ${config.amount}
                         </strong>
                       </div>
@@ -180,15 +189,15 @@
             renderBrick();
           }
 
-          /* ================== STEP 3 ================== */
+          /* ================= STEP 3 ================= */
 
           else if (currentStep === 3) {
 
             modalBody.innerHTML = `
               <div class="text-center py-5">
-                <h3 class="text-success fw-bold mb-3">Pago Aprobado</h3>
+                <h4 class="text-success fw-bold mb-3">Pago Aprobado</h4>
                 <p>Tu pago fue procesado correctamente.</p>
-                <button class="btn btn-primary mt-4 px-5" id="close-modal">
+                <button class="btn mp-btn-primary mt-4 px-5" id="close-modal">
                   Finalizar
                 </button>
               </div>
@@ -219,17 +228,11 @@
             bricksBuilder.create("payment", "payment-container", {
               initialization: {
                 amount: Number(config.amount),
-                /*preferenceId: "<PREFERENCE_ID>",
-                payer: {
-                  firstName: "",
-                  lastName: "",
-                  email: "",
-                },*/
               },
               customization: {
                 visual: {
                   style: {
-                    theme: "default",
+                    theme: "bootstrap",
                   },
                 },
                 paymentMethods: {
