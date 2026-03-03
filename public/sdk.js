@@ -48,10 +48,19 @@
         .mp-modal {
           background:#fff;
           width:100%;
-          max-width:500px;
           border-radius:20px;
           padding:25px;
           position:relative;
+          max-width:500px;
+          transition: max-width .3s ease;
+        }
+
+        .mp-modal-sm {
+          max-width:500px;
+        }
+
+        .mp-modal-lg {
+          max-width:1100px;
         }
 
         .mp-modal-lg {
@@ -137,6 +146,7 @@
       function renderSummary() {
 
         modal.classList.remove("mp-modal-lg");
+        modal.classList.add("mp-modal-sm"); 
 
         const summary = config.summary || [];
         const currency = config.currency || "S/";
@@ -178,6 +188,7 @@
 
       function renderPayment() {
 
+        modal.classList.remove("mp-modal-sm");
         modal.classList.add("mp-modal-lg");
 
         const summary = config.summary || [];
@@ -260,12 +271,10 @@
                   baseColorFirstVariant: String(secondaryColor),
                   baseColorSecondVariant: String(secondaryColor),
                   outlinePrimaryColor: String(primaryColor),
-                  inputVerticalPadding: "15px",
-                  inputHorizontalPadding: "15px",
-                  borderRadiusSmall: "40px",
-                  borderRadiusMedium: "40px",
-                  borderRadiusLarge: "40px",
-                  borderRadiusFull: "40px",
+                  borderRadiusSmall: "20px",
+                  borderRadiusMedium: "20px",
+                  borderRadiusLarge: "20px",
+                  borderRadiusFull: "20px",
                   formPadding: "10px",
                 }
               },
@@ -273,10 +282,6 @@
             paymentMethods: {
               creditCard: "all",
               debitCard: "all",
-              ticket: "all",
-              bankTransfer: "all",
-              onboarding_credits: "all",
-              wallet_purchase: "all",
               maxInstallments: 1
             },
           },
@@ -322,6 +327,7 @@
 
       function renderStatusScreen(paymentId) {
 
+        modal.classList.remove("mp-modal-sm");
         modal.classList.add("mp-modal-lg");
 
         modalBody.innerHTML = `
@@ -350,7 +356,7 @@
                   baseColor: String(primaryColor),
                   baseColorFirstVariant: String(secondaryColor),
                   baseColorSecondVariant: String(secondaryColor),
-                  borderRadiusMedium: "40px",
+                  borderRadiusMedium: "20px",
                 }
               }
             }
