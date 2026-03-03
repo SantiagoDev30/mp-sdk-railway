@@ -23,7 +23,7 @@
       let statusController = null;
 
       /* =========================
-         SHADOW DOM HOST
+         SHADOW HOST
       ========================== */
 
       const host = document.createElement("div");
@@ -32,7 +32,7 @@
       const shadow = host.attachShadow({ mode: "open" });
 
       /* =========================
-         CARGAR BOOTSTRAP AISLADO
+         BOOTSTRAP AISLADO
       ========================== */
 
       const bootstrapCSS = document.createElement("link");
@@ -41,7 +41,7 @@
       shadow.appendChild(bootstrapCSS);
 
       /* =========================
-         ESTILOS PROPIOS
+         ESTILOS LOCALES
       ========================== */
 
       const style = document.createElement("style");
@@ -72,7 +72,7 @@
           right: 15px;
           border: none;
           background: transparent;
-          font-size: 20px;
+          font-size: 22px;
           cursor: pointer;
         }
 
@@ -84,9 +84,7 @@
           color: #fff;
         }
 
-        .mp-btn-primary:hover {
-          opacity: 0.9;
-        }
+        .mp-btn-primary:hover { opacity: 0.9; }
       `;
       shadow.appendChild(style);
 
@@ -109,7 +107,7 @@
       const modalBody = overlay.querySelector("#mp-body");
 
       /* =========================
-         CLEANUP FUNCTIONS
+         CLEANUP
       ========================== */
 
       function destroyPaymentBrick() {
@@ -129,10 +127,23 @@
       function closeModal() {
         destroyPaymentBrick();
         destroyStatusScreen();
+        if (globalContainer) {
+          document.body.removeChild(globalContainer);
+        }
         document.body.removeChild(host);
       }
 
       overlay.querySelector(".close-btn").onclick = closeModal;
+
+      /* =========================
+         GLOBAL BRICK CONTAINER
+         (Bridge para evitar error startsWith)
+      ========================== */
+
+      const globalContainer = document.createElement("div");
+      globalContainer.id = "mp-global-container";
+      globalContainer.style.display = "none";
+      document.body.appendChild(globalContainer);
 
       /* =========================
          STEP 1 - RESUMEN
@@ -205,7 +216,7 @@
               <div class="col-md-8">
                 <div class="card border-0 shadow-sm rounded-4 p-4">
                   <h6 class="fw-bold mb-4">Medios de pago</h6>
-                  <div id="payment-container"></div>
+                  <div id="shadow-payment-container"></div>
                   <button class="btn btn-outline-secondary mt-4" id="back-step">
                     ← Volver
                   </button>
@@ -256,7 +267,7 @@
         const mp = new MercadoPago(public_key);
         const bricksBuilder = mp.bricks();
 
-        bricksBuilder.create("payment", modalBody.querySelector("#payment-container"), {
+        bricksBuilder.create("payment", "mp-global-container", {
           initialization: {
             amount: Number(config.amount)
           },
@@ -272,7 +283,14 @@
           callbacks: {
 
             onReady: () => {
-              console.log("Payment Brick listo");
+              const shadowContainer =
+                modalBody.querySelector("#shadow-payment-container");
+
+              const brickContent =
+                document.getElementById("mp-global-container");
+
+              shadowContainer.appendChild(brickContent);
+              brickContent.style.display = "block";
             },
 
             onSubmit: async (formData) => {
@@ -310,12 +328,12 @@
 
       function renderStatusScreen(paymentId) {
 
-        modalBody.innerHTML = `<div id="status-container"></div>`;
+        modalBody.innerHTML = `<div id="shadow-status-container"></div>`;
 
         const mp = new MercadoPago(public_key);
         const bricksBuilder = mp.bricks();
 
-        bricksBuilder.create("statusScreen", modalBody.querySelector("#status-container"), {
+        bricksBuilder.create("statusScreen", "mp-global-container", {
           initialization: {
             paymentId: paymentId
           },
@@ -326,8 +344,19 @@
             }
           },
           callbacks: {
-            onReady: () => console.log("Status Screen listo"),
-            onError: (error) => console.error("Error Status Screen:", error)
+            onReady: () => {
+              const shadowContainer =
+                modalBody.querySelector("#shadow-status-container");
+
+              const brickContent =
+                document.getElementById("mp-global-container");
+
+              shadowContainer.appendChild(brickContent);
+              brickContent.style.display = "block";
+            },
+            onError: (error) => {
+              console.error("Error Status Screen:", error);
+            }
           }
 
         }).then(controller => {
