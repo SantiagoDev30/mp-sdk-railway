@@ -288,8 +288,8 @@
 
           callbacks: {
 
-            onReady: () => {
-              console.log("Payment Brick listo");
+            onReady: () => { 
+              console.log("Payment Brick listo");  
             },
 
             onSubmit: async (formData) => {
