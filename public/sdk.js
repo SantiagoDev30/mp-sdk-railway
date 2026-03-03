@@ -17,111 +17,22 @@
       const { public_key } = await response.json();
 
       const primaryColor = config.primaryColor || "#0d6efd";
-      const secondaryColor = config.secondaryColor || primaryColor;
+      const secondaryColor = config.secondaryColor || "#0b5ed7";
+
+      MP_UTILS.injectStyles(primaryColor, secondaryColor);
 
       let paymentController = null;
       let statusController = null;
 
-      /* =========================
-         SHADOW HOST
-      ========================== */
-
-      const host = document.createElement("div");
-      document.body.appendChild(host);
-
-      const shadow = host.attachShadow({ mode: "open" });
-
-      /* =========================
-         BOOTSTRAP AISLADO
-      ========================== */
-
-      const bootstrapCSS = document.createElement("link");
-      bootstrapCSS.rel = "stylesheet";
-      bootstrapCSS.href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css";
-      shadow.appendChild(bootstrapCSS);
-
-      /* =========================
-         ESTILOS LOCALES
-      ========================== */
-
-      const style = document.createElement("style");
-      style.textContent = `
-        .overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 999999;
-        }
-
-        .modal-container {
-          background: #fff;
-          width: 100%;
-          max-width: 900px;
-          border-radius: 20px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-          position: relative;
-          padding: 20px;
-        }
-
-        .close-btn {
-          position: absolute;
-          top: 15px;
-          right: 15px;
-          border: none;
-          background: transparent;
-          font-size: 22px;
-          cursor: pointer;
-        }
-
-        .mp-primary { color: ${primaryColor}; }
-
-        .mp-btn-primary {
-          background: ${primaryColor};
-          border: none;
-          color: #fff;
-          border-radius: 20px;
-        }
-
-        .mp-btn-primary:hover { 
-          background: ${secondaryColor};
-          opacity: 0.9; 
-        }
-      `;
-      shadow.appendChild(style);
-
-      /* =========================
-         OVERLAY
-      ========================== */
-
-      const overlay = document.createElement("div");
-      overlay.className = "overlay";
-
-      overlay.innerHTML = `
-        <div class="modal-container">
-          <button class="close-btn">&times;</button>
-          <div id="mp-body"></div>
-        </div>
-      `;
-
-      shadow.appendChild(overlay);
-
+      const overlay = MP_UTILS.createOverlay();
+      const modal = overlay.querySelector(".mp-modal");
       const modalBody = overlay.querySelector("#mp-body");
 
-      /* =========================
-         CLEANUP
-      ========================== */
-
-      function destroyPaymentBrick() {
+      function destroyBricks() {
         if (paymentController) {
           paymentController.unmount();
           paymentController = null;
         }
-      }
-
-      function destroyStatusScreen() {
         if (statusController) {
           statusController.unmount();
           statusController = null;
@@ -129,31 +40,17 @@
       }
 
       function closeModal() {
-        destroyPaymentBrick();
-        destroyStatusScreen();
-        if (globalContainer) {
-          document.body.removeChild(globalContainer);
-        }
-        document.body.removeChild(host);
+        destroyBricks();
+        MP_UTILS.destroyElement(overlay);
       }
 
-      overlay.querySelector(".close-btn").onclick = closeModal;
+      overlay.querySelector(".mp-close").onclick = closeModal;
 
-      /* =========================
-         GLOBAL BRICK CONTAINER
-         (Bridge para evitar error startsWith)
-      ========================== */
-
-      const globalContainer = document.createElement("div");
-      globalContainer.id = "mp-global-container";
-      globalContainer.style.display = "none";
-      document.body.appendChild(globalContainer);
-
-      /* =========================
-         STEP 1 - RESUMEN
-      ========================== */
+      /* ================= STEP 1 ================= */
 
       function renderSummary() {
+
+        modal.classList.remove("mp-modal-lg");
 
         const summary = config.summary || [];
         const currency = config.currency || "S/";
@@ -162,7 +59,7 @@
 
         summary.forEach(item => {
           summaryHTML += `
-            <div class="d-flex justify-content-between mb-2">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
               <span>${item.label}</span>
               <strong>${item.value}</strong>
             </div>
@@ -170,22 +67,20 @@
         });
 
         modalBody.innerHTML = `
-          <h5 class="fw-bold mb-4">Resumen de Compra</h5>
-
-          <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+          <h5>Resumen de Compra</h5>
+          <div style="margin:15px 0;">
             ${summaryHTML}
             <hr>
-            <div class="d-flex justify-content-between fs-5">
-              <strong>Total:</strong>
-              <strong class="mp-primary">
+            <div style="display:flex;justify-content:space-between;font-weight:bold;">
+              <span>Total</span>
+              <span style="color:${primaryColor}">
                 ${currency} ${config.amount}
-              </strong>
+              </span>
             </div>
           </div>
-
-          <div class="text-end">
-            <button class="btn mp-btn-primary px-4" id="next-step">
-              Continuar →
+          <div style="text-align:right;">
+            <button class="mp-btn-primary" id="next-step">
+              Continuar
             </button>
           </div>
         `;
@@ -193,11 +88,11 @@
         modalBody.querySelector("#next-step").onclick = renderPayment;
       }
 
-      /* =========================
-         STEP 2 - PAYMENT
-      ========================== */
+      /* ================= STEP 2 ================= */
 
       function renderPayment() {
+
+        modal.classList.add("mp-modal-lg");
 
         const summary = config.summary || [];
         const currency = config.currency || "S/";
@@ -206,7 +101,7 @@
 
         summary.forEach(item => {
           summaryHTML += `
-            <div class="d-flex justify-content-between mb-2">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
               <span>${item.label}</span>
               <span>${item.value}</span>
             </div>
@@ -214,34 +109,28 @@
         });
 
         modalBody.innerHTML = `
-          <div class="container-fluid">
-            <div class="row g-4">
-
-              <div class="col-md-8">
-                <div class="card border-0 shadow-sm rounded-4 p-4">
-                  <h6 class="fw-bold mb-4">Medios de pago</h6>
-                  <div id="shadow-payment-container"></div>
-                  <button class="btn btn-outline-secondary mt-4" id="back-step">
-                    ← Volver
-                  </button>
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <div class="card border-0 shadow-sm rounded-4 p-4">
-                  <h6 class="fw-bold mb-3">Resumen</h6>
-                  ${summaryHTML}
-                  <hr>
-                  <div class="d-flex justify-content-between fs-5">
-                    <strong>Total</strong>
-                    <strong class="mp-primary">
-                      ${currency} ${config.amount}
-                    </strong>
-                  </div>
-                </div>
-              </div>
-
+          <div style="display:flex;gap:30px;">
+            
+            <div style="flex:2;">
+              <h6>Medios de pago</h6>
+              <div id="payment-container"></div>
+              <button id="back-step" style="margin-top:15px;">
+                ← Volver
+              </button>
             </div>
+
+            <div style="flex:1;border-left:1px solid #eee;padding-left:20px;">
+              <h6>Resumen</h6>
+              ${summaryHTML}
+              <hr>
+              <div style="display:flex;justify-content:space-between;font-weight:bold;">
+                <span>Total</span>
+                <span style="color:${primaryColor}">
+                  ${currency} ${config.amount}
+                </span>
+              </div>
+            </div>
+
           </div>
         `;
 
@@ -250,9 +139,7 @@
         renderPaymentBrick();
       }
 
-      /* =========================
-         PAYMENT BRICK
-      ========================== */
+      /* ================= PAYMENT BRICK ================= */
 
       function renderPaymentBrick() {
 
@@ -271,51 +158,47 @@
         const mp = new MercadoPago(public_key);
         const bricksBuilder = mp.bricks();
 
-        bricksBuilder.create("payment", "mp-global-container", {
+        bricksBuilder.create("payment", "payment-container", {
+
           initialization: {
-            amount: Number(config.amount)
+            amount: Number(config.amount),
           },
-          customization: { 
-            visual: { 
-              hideFormTitle: true, 
-              style: { 
-                theme: "bootstrap", 
-                customVariables: { 
-                  baseColor: primaryColor, 
-                  baseColorFirstVariant: secondaryColor, 
-                  baseColorSecondVariant: secondaryColor,
-                  outlinePrimaryColor: primaryColor, 
-                  inputVerticalPadding: "15px", 
-                  inputHorizontalPadding: "15px", 
-                  borderRadiusSmall: "20px", 
-                  borderRadiusMedium: "20px", 
-                  borderRadiusLarge: "20px", 
-                  borderRadiusFull: "20px", 
-                  formPadding: "10px", 
-                } 
-              }, 
-            }, 
-            paymentMethods: { 
-              creditCard: "all", 
-              debitCard: "all", 
-              ticket: "all", 
-              bankTransfer: "all", 
-              onboarding_credits: "all", 
-              wallet_purchase: "all", 
-              maxInstallments: 1 
+
+          customization: {
+            visual: {
+              hideFormTitle: true,
+              style: {
+                theme: "bootstrap",
+                customVariables: {
+                  baseColor: String(primaryColor),
+                  baseColorFirstVariant: String(secondaryColor),
+                  baseColorSecondVariant: String(secondaryColor),
+                  outlinePrimaryColor: String(primaryColor),
+                  inputVerticalPadding: "15px",
+                  inputHorizontalPadding: "15px",
+                  borderRadiusSmall: "40px",
+                  borderRadiusMedium: "40px",
+                  borderRadiusLarge: "40px",
+                  borderRadiusFull: "40px",
+                  formPadding: "10px",
+                }
+              },
+            },
+            paymentMethods: {
+              creditCard: "all",
+              debitCard: "all",
+              ticket: "all",
+              bankTransfer: "all",
+              onboarding_credits: "all",
+              wallet_purchase: "all",
+              maxInstallments: 1
             },
           },
+
           callbacks: {
 
             onReady: () => {
-              const shadowContainer =
-                modalBody.querySelector("#shadow-payment-container");
-
-              const brickContent =
-                document.getElementById("mp-global-container");
-
-              shadowContainer.appendChild(brickContent);
-              brickContent.style.display = "block";
+              console.log("Payment Brick listo");
             },
 
             onSubmit: async (formData) => {
@@ -332,14 +215,16 @@
               const result = await response.json();
 
               if (result.id) {
-                destroyPaymentBrick();
+                destroyBricks();
                 renderStatusScreen(result.id);
               }
+
             },
 
             onError: (error) => {
-              console.error("Error Payment Brick:", error);
+              console.error("Error Brick:", error);
             }
+
           }
 
         }).then(controller => {
@@ -347,46 +232,62 @@
         });
       }
 
-      /* =========================
-         STATUS SCREEN
-      ========================== */
+      /* ================= STEP 3 - STATUS SCREEN ================= */
 
       function renderStatusScreen(paymentId) {
 
-        modalBody.innerHTML = `<div id="shadow-status-container"></div>`;
+        modal.classList.remove("mp-modal-lg");
+        modal.classList.add("mp-modal-lg");
+
+        modalBody.innerHTML = `
+          <div id="status-container"></div>
+          <div style="text-align:right;margin-top:20px;">
+            <button class="mp-btn-primary" id="close-status">
+              Finalizar
+            </button>
+          </div>
+        `;
 
         const mp = new MercadoPago(public_key);
         const bricksBuilder = mp.bricks();
 
-        bricksBuilder.create("statusScreen", "mp-global-container", {
+        bricksBuilder.create("statusScreen", "status-container", {
+
           initialization: {
-            paymentId: paymentId
+            paymentId: paymentId,
           },
-          appearance: {
-            theme: "bootstrap",
-            variables: {
-              baseColor: primaryColor
+
+          customization: {
+            visual: {
+              style: {
+                theme: "bootstrap",
+                customVariables: {
+                  baseColor: String(primaryColor),
+                  baseColorFirstVariant: String(secondaryColor),
+                  baseColorSecondVariant: String(secondaryColor),
+                  borderRadiusMedium: "40px",
+                }
+              }
             }
           },
+
           callbacks: {
+
             onReady: () => {
-              const shadowContainer =
-                modalBody.querySelector("#shadow-status-container");
-
-              const brickContent =
-                document.getElementById("mp-global-container");
-
-              shadowContainer.appendChild(brickContent);
-              brickContent.style.display = "block";
+              console.log("Status Screen listo");
             },
+
             onError: (error) => {
               console.error("Error Status Screen:", error);
             }
+
           }
 
         }).then(controller => {
           statusController = controller;
         });
+
+        modalBody.querySelector("#close-status").onclick = closeModal;
       }
 
       renderSummary();
