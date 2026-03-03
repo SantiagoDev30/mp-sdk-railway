@@ -4,6 +4,92 @@
   const currentScript = scripts[scripts.length - 1];
   const baseUrl = currentScript.src.replace("/sdk.js", "");
 
+  /* =========================
+     UTILS INTERNAS (NO GLOBALES)
+  ========================== */
+
+  const utils = {
+
+    createOverlay() {
+      const overlay = document.createElement("div");
+      overlay.className = "mp-overlay";
+      overlay.innerHTML = `
+        <div class="mp-modal">
+          <button class="mp-close">&times;</button>
+          <div id="mp-body"></div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      return overlay;
+    },
+
+    destroyElement(el) {
+      if (el && el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    },
+
+    injectStyles(primary, secondary) {
+      if (document.getElementById("mp-sdk-styles")) return;
+
+      const style = document.createElement("style");
+      style.id = "mp-sdk-styles";
+      style.innerHTML = `
+        .mp-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,.5);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          z-index:999999;
+        }
+
+        .mp-modal {
+          background:#fff;
+          width:100%;
+          max-width:500px;
+          border-radius:20px;
+          padding:25px;
+          position:relative;
+        }
+
+        .mp-modal-lg {
+          max-width:1000px;
+        }
+
+        .mp-close {
+          position:absolute;
+          top:15px;
+          right:15px;
+          background:none;
+          border:none;
+          font-size:22px;
+          cursor:pointer;
+        }
+
+        .mp-btn-primary {
+          background:${primary};
+          color:#fff;
+          border:none;
+          border-radius:40px;
+          padding:10px 25px;
+        }
+
+        .mp-btn-primary:hover {
+          background:${secondary};
+          color:#fff;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+  };
+
+  /* =========================
+     SDK PRINCIPAL
+  ========================== */
+
   window.MP_SDK = {
 
     openPayment: async function (config) {
@@ -19,12 +105,12 @@
       const primaryColor = config.primaryColor || "#0d6efd";
       const secondaryColor = config.secondaryColor || "#0b5ed7";
 
-      MP_UTILS.injectStyles(primaryColor, secondaryColor);
+      utils.injectStyles(primaryColor, secondaryColor);
 
       let paymentController = null;
       let statusController = null;
 
-      const overlay = MP_UTILS.createOverlay();
+      const overlay = utils.createOverlay();
       const modal = overlay.querySelector(".mp-modal");
       const modalBody = overlay.querySelector("#mp-body");
 
@@ -41,7 +127,7 @@
 
       function closeModal() {
         destroyBricks();
-        MP_UTILS.destroyElement(overlay);
+        utils.destroyElement(overlay);
       }
 
       overlay.querySelector(".mp-close").onclick = closeModal;
@@ -232,11 +318,10 @@
         });
       }
 
-      /* ================= STEP 3 - STATUS SCREEN ================= */
+      /* ================= STEP 3 ================= */
 
       function renderStatusScreen(paymentId) {
 
-        modal.classList.remove("mp-modal-lg");
         modal.classList.add("mp-modal-lg");
 
         modalBody.innerHTML = `
