@@ -82,9 +82,13 @@
           background: ${primaryColor};
           border: none;
           color: #fff;
+          border-radius: 20px;
         }
 
-        .mp-btn-primary:hover { opacity: 0.9; }
+        .mp-btn-primary:hover { 
+          background: ${secondaryColor};
+          opacity: 0.9; 
+        }
       `;
       shadow.appendChild(style);
 
@@ -271,14 +275,35 @@
           initialization: {
             amount: Number(config.amount)
           },
-          appearance: {
-            theme: "bootstrap",
-            variables: {
-              baseColor: primaryColor,
-              baseColorFirstVariant: secondaryColor,
-              baseColorSecondVariant: secondaryColor,
-              borderRadiusMedium: "20px"
-            }
+          customization: { 
+            visual: { 
+              hideFormTitle: true, 
+              style: { 
+                theme: "bootstrap", 
+                customVariables: { 
+                  baseColor: primaryColor, 
+                  baseColorFirstVariant: secondaryColor, 
+                  baseColorSecondVariant: secondaryColor,
+                  outlinePrimaryColor: primaryColor, 
+                  inputVerticalPadding: "15px", 
+                  inputHorizontalPadding: "15px", 
+                  borderRadiusSmall: "20px", 
+                  borderRadiusMedium: "20px", 
+                  borderRadiusLarge: "20px", 
+                  borderRadiusFull: "20px", 
+                  formPadding: "10px", 
+                } 
+              }, 
+            }, 
+            paymentMethods: { 
+              creditCard: "all", 
+              debitCard: "all", 
+              ticket: "all", 
+              bankTransfer: "all", 
+              onboarding_credits: "all", 
+              wallet_purchase: "all", 
+              maxInstallments: 1 
+            },
           },
           callbacks: {
 
